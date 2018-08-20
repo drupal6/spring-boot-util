@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.boot.ExitCodeGenerator;
-import org.springframework.stereotype.Component;
 
 
 /**
@@ -12,7 +11,6 @@ import org.springframework.stereotype.Component;
  * @author Administrator
  *
  */
-@Component
 public class StopApplicationRunner implements DisposableBean, ExitCodeGenerator {
 	
 	private final static Logger LOGGER = LoggerFactory.getLogger(StopApplicationRunner.class);
