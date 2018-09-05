@@ -178,10 +178,10 @@ public class ZookeeperConf {
      * @return
      */
     private String findLeaderId(Collection<ServiceInstance<Map>> maps){
-        Integer min = Integer.MAX_VALUE;
+        Long min = Long.MAX_VALUE;
         ServiceInstance<Map> minMap = null;
         for(ServiceInstance<Map> map : maps){
-            Integer num = Integer.parseInt(map.getId().substring(0, 8), 16);
+            Long num = Long.parseLong(map.getId().substring(0, 8), 16);
             if(num<=min){
                 min = num;
                 minMap = map;

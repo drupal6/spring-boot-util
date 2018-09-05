@@ -8,6 +8,6 @@ public class ZKServiceApplication {
 
     public static void main(String[] args) throws InterruptedException {
         SpringApplication.run(ZKServiceApplication.class, args);
-        Thread.sleep(10000);
+        Thread.sleep(30000);
     }
 }
