@@ -38,6 +38,10 @@ public class ZKService {
         zkClient.close();
     }
 
+    public boolean isLeader() {
+        return zkConfig.isLeader();
+    }
+
     /**
      * 随机负载均衡
      * @param serviceName

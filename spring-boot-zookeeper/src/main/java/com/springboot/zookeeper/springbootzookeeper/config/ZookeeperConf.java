@@ -1,12 +1,16 @@
 package com.springboot.zookeeper.springbootzookeeper.config;
 
+import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import com.springboot.zookeeper.springbootzookeeper.entity.ServiceNode;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.recipes.cache.*;
-import org.apache.curator.framework.recipes.leader.LeaderSelector;
-import org.apache.curator.framework.recipes.leader.LeaderSelectorListenerAdapter;
+import org.apache.curator.framework.recipes.cache.TreeCache;
+import org.apache.curator.framework.recipes.cache.TreeCacheEvent;
+import org.apache.curator.framework.recipes.cache.TreeCacheListener;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.x.discovery.ServiceDiscovery;
 import org.apache.curator.x.discovery.ServiceDiscoveryBuilder;
@@ -20,11 +24,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 @ConfigurationProperties("zk")
 @Configuration
+@SuppressWarnings("rawtypes")
 public class ZookeeperConf {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(ZookeeperConf.class);
@@ -40,10 +43,13 @@ public class ZookeeperConf {
     //节点配置
     private Map<String, Map<String, String>> service;
 
+    ServiceDiscovery<Map> serviceDiscovery;
+    //作为服务提供者时的id
+    private String providerId = null;
     //是否是领导
     private boolean isLeader = false;
 
-    //服务节点信息
+    //服务节点信息<服务名称,<服务节点id,服务节点信息>
     private Map<String, Map<String, ServiceNode>> servicesMap = new ConcurrentHashMap<String, Map<String, ServiceNode>>();
 
     public Map<String, Map<String, String>> getService() {
@@ -63,28 +69,11 @@ public class ZookeeperConf {
         //重连策略 初始重连间隔1000毫秒，尝试重连次数3
         RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
         CuratorFramework zkClient = CuratorFrameworkFactory.newClient(zkUrl, retryPolicy);
-        //选举监听
-//        leaderListener(zkClient);
+        //链接zk
         zkClient.start();
-//        //初始服务
+        //初始服务
 //        initServices(zkClient);
         return zkClient;
-    }
-
-    /**
-     * 选举监听
-     * @param zkClient
-     */
-    private void leaderListener(CuratorFramework zkClient) {
-        LeaderSelectorListenerAdapter listener = new LeaderSelectorListenerAdapter() {
-            public void takeLeadership(CuratorFramework client)  {
-                isLeader = true;
-                System.out.println(">>>>leader:" + isLeader);
-            }
-        };
-        LeaderSelector selector = new LeaderSelector(zkClient, "/leader", listener);
-        selector.autoRequeue();
-        selector.start();
     }
 
     /**
@@ -95,16 +84,21 @@ public class ZookeeperConf {
         if(service != null && false == service.isEmpty()) {
             for(String serviceName : service.keySet()) {
                 Map<String, String> conf = service.get(serviceName);
+                if(conf.get(TYPE) == null) {
+                    throw new IllegalArgumentException("zk service type not found. serviceName:" + serviceName);
+                }
                 if(conf.get(TYPE).equals("provider")) {
                     //注册服务
                     registerService(zkClient, conf.get(BPATH), conf.get(ADDRESS), Integer.parseInt(conf.get(PORT)), serviceName, null);
+                    //领导者变动监听
+                    leaderListener(zkClient, conf.get(BPATH), serviceName);
                 } else if (conf.get(TYPE).equals("consumer")) {
                     //发现服务
                     discoverService(zkClient, conf.get(BPATH), serviceName);
                     //监听服务节点变化
                     treeAddListener(zkClient, conf.get(BPATH), serviceName);
                 } else {
-                    throw new IllegalArgumentException("zk service type not found. serviceName:" + serviceName);
+                    throw new IllegalArgumentException("zk service type not suport. serviceName:" + serviceName + " type:" + conf.get(TYPE));
                 }
             }
         }
@@ -131,15 +125,69 @@ public class ZookeeperConf {
             service.payload(extData);
         }
         ServiceInstance<Map> instance = service.build();
-        ServiceDiscovery<Map> serviceDiscovery = ServiceDiscoveryBuilder.builder(Map.class)
+        serviceDiscovery = ServiceDiscoveryBuilder.builder(Map.class)
                 .client(zkClient)
                 .serializer(new JsonInstanceSerializer<Map>(Map.class))
                 .basePath(basePath)
                 .build();
         serviceDiscovery.registerService(instance);
         serviceDiscovery.start();
+        providerId = instance.getId();
+        changeLeader(serviceName);
         LOGGER.info("registerService is success! basePath:{}, address:{}, port:{}, serviceName:{}"
                 , basePath, address, port, serviceName);
+    }
+
+    /**
+     * 改变领导者。选最小id的节点做为领导者
+     */
+    private void changeLeader(String serviceName) {
+        try {
+            Collection<ServiceInstance<Map>> all = serviceDiscovery.queryForInstances(serviceName);
+            if(all == null || all.isEmpty()) {
+                isLeader = true;
+            } else {
+                String leaderId = findLeaderId(all);
+                if(providerId.equals(leaderId)) {
+                    isLeader = true;
+                }
+            }
+            LOGGER.info("changeLeader id:{}, leader:{}", providerId, isLeader);
+        } catch (Exception e1) {
+            e1.printStackTrace();
+        }
+    }
+
+    /**
+     * 监听所有子节点(限定支持2层节点)
+     * @param zkClient
+     * @param basePath
+     * @throws Exception
+     */
+    private void leaderListener(CuratorFramework zkClient, String basePath, String serviceName) throws Exception {
+        String path = basePath + "/" + serviceName;
+        TreeCache cache = new TreeCache(zkClient, path);
+        cache.start();
+        ProviderServiceNodeListener serviceNodeListener = new ProviderServiceNodeListener(path, serviceName);
+        cache.getListenable().addListener(serviceNodeListener);
+    }
+
+    /**
+     * 获取最小id的节点
+     * @param maps
+     * @return
+     */
+    private String findLeaderId(Collection<ServiceInstance<Map>> maps){
+        Integer min = Integer.MAX_VALUE;
+        ServiceInstance<Map> minMap = null;
+        for(ServiceInstance<Map> map : maps){
+            Integer num = Integer.parseInt(map.getId().substring(0, 8), 16);
+            if(num<=min){
+                min = num;
+                minMap = map;
+            }
+        }
+        return minMap.getId();
     }
 
     /**
@@ -226,15 +274,19 @@ public class ZookeeperConf {
         String path = basePath + "/" + serviceName;
         TreeCache cache = new TreeCache(zkClient, path);
         cache.start();
-        ServiceNodeListener serviceNodeListener = new ServiceNodeListener(path, serviceName);
+        ConsumerServiceNodeListener serviceNodeListener = new ConsumerServiceNodeListener(path, serviceName);
         cache.getListenable().addListener(serviceNodeListener);
     }
-
-    class ServiceNodeListener implements TreeCacheListener {
+    /**
+     * 消费端监听节点变化
+     * @author Administrator
+     *
+     */
+    class ConsumerServiceNodeListener implements TreeCacheListener {
         String path;
         String serviceName;
 
-        public ServiceNodeListener(String path, String serviceName) {
+        public ConsumerServiceNodeListener(String path, String serviceName) {
             this.path = path;
             this.serviceName = serviceName;
         }
@@ -276,6 +328,49 @@ public class ZookeeperConf {
                         break;
                     case NODE_REMOVED:
                         removeNode(serviceName, event.getData().getPath());
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+    }
+
+    /**
+     * 服务端监听节点变化
+     * @author Administrator
+     *
+     */
+    class ProviderServiceNodeListener implements TreeCacheListener {
+        String path;
+        String serviceName;
+
+        public ProviderServiceNodeListener(String path, String serviceName) {
+            this.path = path;
+            this.serviceName = serviceName;
+        }
+
+        @Override
+        public void childEvent(CuratorFramework curatorFramework, TreeCacheEvent event) throws Exception {
+            if(event.getData() == null || event.getData().getPath() == null) {
+                return;
+            }
+            LOGGER.info("node change event. type:{}, path:{}, data:{}", event.getType().name()
+                    , event.getData().getPath(), new String(event.getData().getData()));
+            if(path.equals(event.getData().getPath())) {
+                //父节点变更 只处理移除事件
+                switch (event.getType()) {
+                    case NODE_REMOVED:
+                        changeLeader(serviceName);
+                        break;
+                    default:
+                        break;
+                }
+            } else {
+                //子节点变更
+                switch (event.getType()) {
+                    case NODE_REMOVED:
+                        changeLeader(serviceName);
                         break;
                     default:
                         break;
