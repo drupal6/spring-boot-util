@@ -22,14 +22,14 @@ public class ParamUtil {
 
 
     public static String getParam(Map<String, Object> param, String name) throws Throwable{
+    	if(false == name.startsWith("{#") || false == name.endsWith("}")) {
+    		return name;
+    	}
         if(param == null || param.isEmpty()) {
             return null;
         }
         if(name == null || name.isEmpty()){
             return null;
-        }
-        if(false == name.startsWith("{#") || false == name.endsWith("}")) {
-            throw new Throwable("param name not suport. expect {#xxx.xxx} but is " + name);
         }
         String[] names = name.substring(2, name.length() - 1).split("\\.");
         Object obj = null;

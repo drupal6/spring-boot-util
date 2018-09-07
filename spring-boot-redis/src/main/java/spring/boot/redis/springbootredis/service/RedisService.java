@@ -1,17 +1,17 @@
 package spring.boot.redis.springbootredis.service;
 
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
-
 @Service
 public class RedisService {
     @Autowired
-    RedisTemplate<String, Object> redisTemplate;
+    private RedisTemplate<String, Object> redisTemplate;
 
 
     public Boolean expire(final String key, final long expire) {
@@ -51,7 +51,37 @@ public class RedisService {
             }
         });
     }
+    /**
+     * 
+     * @param key
+     * @param value
+     * @param expire 过期时间
+     * @return
+     */
+    public Boolean setEx(final String key, final byte[] value, final long expire) {
+    	return redisTemplate.execute(new RedisCallback<Boolean>() {
+    		@Override
+    		public Boolean doInRedis(RedisConnection redisConnection) {
+    			return redisConnection.setEx(key.getBytes(), expire, value);
+    		}
+    	});
+    }
 
+    /**
+     * 只有当key不存在是才可以设置
+     * @param key
+     * @param value
+     * @return
+     */
+    public Boolean setNX(final String key, final byte[] value) {
+    	return redisTemplate.execute(new RedisCallback<Boolean>() {
+    		@Override
+    		public Boolean doInRedis(RedisConnection redisConnection) {
+    			return redisConnection.setNX(key.getBytes(), value);
+    		}
+    	});
+    }
+    
     /**
      * get
      * @param key
