@@ -11,10 +11,10 @@ import com.alibaba.fastjson.JSONObject;
 /**
  * JSON公共帮助类
  * @author bill.li
- *
+ * 
  */
 public class JSONUtil {
-
+	
 	/**
 	 * object转成byte
 	 */
@@ -28,7 +28,7 @@ public class JSONUtil {
 	public static Object getObject(byte[] buf) {
 		return JSON.parse(buf);
 	}
-
+	
 	/**
 	 * Object转成String
 	 */
@@ -42,22 +42,22 @@ public class JSONUtil {
 	public static <T> T strToObj(String str, Class<? extends T> clazz) {
 		return JSON.parseObject(str, clazz);
 	}
-
+	
 	public static <T> T byteToObj(byte[] bs, Class<? extends T> clazz) {
 		return JSON.parseObject(bs, clazz);
 	}
-
+	
 	/**
 	 * String转成Object
 	 */
 	public static <T> T strToObj(String str, Type type) {
 		return JSON.parseObject(str, type);
 	}
-
+	
 	public static <T> T byteToObject(byte[] bs, Type type) {
 		return JSON.parseObject(bs, type);
 	}
-
+	
 	/**
 	 * 将JSON列表转换为字符串
 	 * @param jsonList

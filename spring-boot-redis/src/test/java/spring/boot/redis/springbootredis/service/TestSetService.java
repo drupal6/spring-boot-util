@@ -8,7 +8,7 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import spring.boot.redis.springbootredis.annotation.BIOLock;
+import spring.boot.redis.springbootredis.annotation.RedisLock;
 import spring.boot.redis.springbootredis.annotation.RedisSet;
 import spring.boot.redis.springbootredis.entity.Test;
 
@@ -67,7 +67,7 @@ public class TestSetService {
         return map;
     }
     
-    @BIOLock(lockName="test", lockKey="{#test.id}", comsumerKey="{#test.id}", expire=5000)
+    @RedisLock(lockName="test", lockKey="{#test.id}", comsumerKey="{#test.id}", expire=5000)
     public boolean handlerTest(Test test) {
     	try {
 			Thread.sleep(5000);
@@ -77,7 +77,7 @@ public class TestSetService {
     	return true;
 
     }
-    @BIOLock(lockName="test", lockKey="{#test.id}", comsumerKey="{#test.id}", expire=500)
+    @RedisLock(lockName="test", lockKey="{#test.id}", comsumerKey="{#test.id}", expire=500)
     public boolean handlerTest1(Test test) {
     	try {
     		Thread.sleep(500);

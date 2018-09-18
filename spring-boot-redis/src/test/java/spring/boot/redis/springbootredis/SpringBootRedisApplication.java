@@ -15,8 +15,8 @@ public class SpringBootRedisApplication {
 
     public static void main(String[] args) throws InterruptedException {
         ConfigurableApplicationContext context = SpringApplication.run(SpringBootRedisApplication.class, args);
-        
-        
+
+
         TestSetService testService = (TestSetService) context.getBean("testSetService");
 
         System.out.println(">>>>>>>>>>>>>>>>");
@@ -43,11 +43,11 @@ public class SpringBootRedisApplication {
         for(int id : map1.keySet()) {
         	System.out.println(map1.get(id));
         }
-        
+
         Test t = new Test();
-		t.setId(1);
-		t.setName("111");
-		t.setPassword("111");
-		testService.handlerTest1(t);
+        t.setId(1);
+        t.setName("111");
+        t.setPassword("111");
+        testService.handlerTest1(t);
     }
 }

@@ -18,6 +18,7 @@ import spring.boot.redis.springbootredis.service.RedisService;
 import spring.boot.redis.springbootredis.util.JSONUtil;
 import spring.boot.redis.springbootredis.util.ParamUtil;
 
+
 @Component
 @Aspect
 public class RedisSetAOP {
@@ -34,7 +35,8 @@ public class RedisSetAOP {
         Signature s = pjp.getSignature();
         MethodSignature ms = (MethodSignature) s;
         Method m = ms.getMethod();
-        RedisSet redisSet = m.getAnnotation(RedisSet.class);
+        RedisSet redisSet;
+        redisSet = m.getAnnotation(RedisSet.class);
         if(redisSet.name() == null || redisSet.name().isEmpty()) {
             throw new Throwable("name is null or is empty.");
         }
@@ -78,6 +80,7 @@ public class RedisSetAOP {
         	return JSONUtil.byteToObject(returnBytes, type);
         }
     }
+
 
     private byte[] objToByte(Object returnObj) throws Throwable {
         if(returnObj instanceof String) {

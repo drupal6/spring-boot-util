@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface BIOLock {
+public @interface RedisLock {
 
 	//锁名字
 	String lockName();
@@ -24,5 +24,6 @@ public @interface BIOLock {
 	int expire() default 1000;
 	//循环周期 默认10毫秒 (单位:毫秒)
 	int margin() default 10;
-	
+	//是否同步等待 默认是等待
+	boolean nio() default true;
 }
