@@ -1,0 +1,25 @@
+package ${mapperpackage};
+
+import ${entitypackage}.${className};
+import org.apache.ibatis.annotations.Mapper;
+import spring.boot.server.springbootserver.mapper.BaseMapper;
+#if(${hasList})
+import java.util.List;
+#end
+
+/**
+ * ${comments}
+ * @date ${datetime}
+ */
+@Mapper
+public interface ${className}Mapper extends BaseMapper<${className}> {
+
+#foreach($indexEntity in ${clomunMap.entrySet()})
+#if(${indexEntity.value.returnList})
+	List<${className}> queryBy${indexEntity.value.idStr}(${indexEntity.value.paramStr});
+#else
+	${className} queryBy${indexEntity.value.idStr}(${indexEntity.value.paramStr});
+#end
+#end
+
+}

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="spring.boot.server.springbootserver.mapper.main.RoleMapper">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap id="BaseResultMap" type="spring.boot.server.springbootserver.entity.Role">
+        <result column="id" property="id"/>
+        <result column="name" property="name"/>
+    </resultMap>
+    
+    <sql id="Base_Column_List" >
+		id,
+		name
+	</sql>
+
+	<select id="queryObject" resultMap="BaseResultMap">
+		SELECT 
+       	<include refid="Base_Column_List" />
+	   	FROM t_role
+  	 	WHERE id = #{value}
+	</select>
+
+	<select id="queryList" resultMap="BaseResultMap">
+		SELECT 
+       	<include refid="Base_Column_List" />
+	   	FROM t_role
+	</select>
+	 
+	<insert id="save" parameterType="spring.boot.server.springbootserver.entity.Role">
+		insert into t_role
+		(
+			`id`, 
+			`name`
+		)
+		values
+		(
+			#{id}, 
+			#{name}
+		)
+	</insert>
+	 
+	<update id="update" parameterType="spring.boot.server.springbootserver.entity.Role">
+		update t_role 
+		<set>
+			name = #{name}
+		</set>
+		where id = #{id}
+	</update>
+	
+	<delete id="delete">
+		delete from t_role where id = #{value}
+	</delete>
+
+</mapper>

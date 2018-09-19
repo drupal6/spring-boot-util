@@ -1,0 +1,50 @@
+package ${servicepackage};
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import java.util.List;
+import ${mapperpackage}.${className}Mapper;
+import ${entitypackage}.${className};
+
+@Service("${classname}Service")
+public class ${className}Service {
+	@Autowired
+	private ${className}Mapper ${classname}Mapper;
+	
+	
+	
+	
+	public ${className} queryObject(${pk.attrType} ${pk.attrname}){
+		return ${classname}Mapper.queryObject(${pk.attrname});
+	}
+	
+	public List<${className}> queryList(){
+		return ${classname}Mapper.queryList();
+	}
+	
+	public void save(${className} ${classname}){
+		${classname}Mapper.save(${classname});
+	}
+	
+	public void update(${className} ${classname}){
+		${classname}Mapper.update(${classname});
+	}
+	
+	public void delete(${pk.attrType} ${pk.attrname}){
+		${classname}Mapper.delete(${pk.attrname});
+	}
+	
+#foreach($indexEntity in ${clomunMap.entrySet()})
+#if(${indexEntity.value.returnList})
+	public List<${className}> queryBy${indexEntity.value.idStr}(${indexEntity.value.paramStr}){
+		return ${classname}Mapper.queryBy${indexEntity.value.idStr}(${indexEntity.value.paramName});
+	}
+	
+#else
+	public ${className} queryBy${indexEntity.value.idStr}(${indexEntity.value.paramStr}){
+		return ${classname}Mapper.queryBy${indexEntity.value.idStr}(${indexEntity.value.paramName});
+	}
+	
+#end
+#end
+}

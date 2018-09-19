@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="spring.boot.server.springbootserver.mapper.main.UserMapper">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap id="BaseResultMap" type="spring.boot.server.springbootserver.entity.User">
+        <result column="id" property="id"/>
+        <result column="user_name" property="userName"/>
+        <result column="password" property="password"/>
+    </resultMap>
+    
+    <sql id="Base_Column_List" >
+		id,
+		user_name,
+		password
+	</sql>
+
+	<select id="queryObject" resultMap="BaseResultMap">
+		SELECT 
+       	<include refid="Base_Column_List" />
+	   	FROM t_user
+  	 	WHERE id = #{value}
+	</select>
+
+	<select id="queryList" resultMap="BaseResultMap">
+		SELECT 
+       	<include refid="Base_Column_List" />
+	   	FROM t_user
+	</select>
+	 
+	<select id="queryByUserName" resultMap="BaseResultMap">
+		SELECT 
+       	<include refid="Base_Column_List" />
+	   	FROM t_user
+		WHERE user_name = #{userName}
+	</select>
+	
+	<insert id="save" parameterType="spring.boot.server.springbootserver.entity.User" useGeneratedKeys="true" keyProperty="id">
+		insert into t_user
+		(
+			`user_name`, 
+			`password`
+		)
+		values
+		(
+			#{userName}, 
+			#{password}
+		)
+	</insert>
+	 
+	<update id="update" parameterType="spring.boot.server.springbootserver.entity.User">
+		update t_user 
+		<set>
+			user_name = #{userName},
+			password = #{password}
+		</set>
+		where id = #{id}
+	</update>
+	
+	<delete id="delete">
+		delete from t_user where id = #{value}
+	</delete>
+
+</mapper>
